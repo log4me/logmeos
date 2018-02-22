@@ -1,0 +1,6 @@
+*.a
+*.bin
+*.out
+*.o
+floppy
+
