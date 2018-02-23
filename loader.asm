@@ -501,7 +501,7 @@ InitKernel:
     push dword [esi + 08h]              ;ELFPhdr->p_vaddr
     call MemCpy             ;memcpy(void *dst, void *src, int len) 
     add esp, 12
-.NoAction
+.NoAction:
     add esi, 020h                       ;esi指向下一个Program Header
     dec ecx
     jnz .Begin
