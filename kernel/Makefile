@@ -1,5 +1,5 @@
-ASMSRC = $(shell ls *.asm)
-CSRC = $(shell ls *.c)
+ASMSRC = $(wildcard *.asm)
+CSRC = $(wildcard *.c)
 ASMOBJ = $(ASMSRC:.asm=.o)
 COBJ = $(CSRC:.c=.o)
 TARGETS = kernel.o start.o
