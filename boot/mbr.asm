@@ -8,7 +8,7 @@ OffsetOfLoader		equ	0100h	; loader 被加载到位置的偏移地址
 	nop				
 
 ;FAT12 磁盘的头
-%include	"fat12hdr.inc"
+%include	"include/fat12hdr.inc"
 
 LABEL_CODE_START:
 	mov	ax, cs
