@@ -21,5 +21,9 @@ boot: a
 # disable the mouse
 mouse: enabled=0
 
+#cpu: model=corei7_ivy_bridge_3770k
+cpuid: x86_64=1, mmx=1, sep=1, sse=sse4_2, aes=1, movbe=1, xsave=1
+cpuid: family=6, model=0x1a, stepping=5
+
 # enable key mapping, using US layout as default.
 #keyboard_mapping: enabled=1, map=/usr/share/bochs/keymaps/x11-pc-us.map

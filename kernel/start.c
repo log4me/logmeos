@@ -2,10 +2,8 @@
 #include "const.h"
 #include "protect.h"
 #include "string.h"
-PUBLIC void* memcpy(void *pDst, void *pSrc, u32 iSize);
-void disp_str(const char *);
-PUBLIC u8 gdt_ptr[6];//0~1:gdt limit 2~5:gdt base
-PUBLIC DESCRIPTOR gdt[GDT_SIZE];//gdt address in kernel
+#include "proto.h"
+#include "global.h"
 //move gdt from loader to kernel
 PUBLIC void move_gdt_to_kernel()
 {
@@ -17,9 +15,19 @@ PUBLIC void move_gdt_to_kernel()
 }
 PUBLIC void show_info()
 {
-    disp_str("welcome to logme os!!\n");
-    for(int i = 0; i < 24 * 80; ++ i)
-    {
-        disp_str(" ");
-    }
+    disp_str("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nwelcome to logme os!!\n");
+}
+//setup idt
+PUBLIC void setup_idt()
+{
+    u32 *p_idt_base = (u32*)(&idt_ptr[2]);
+    u16 *p_idt_limit = (u16*)(&idt_ptr[0]);
+    *p_idt_limit = IDT_SIZE * sizeof(GATE) - 1;
+    *p_idt_base = (u32)&idt;
+}
+PUBLIC void cstart()
+{
+    move_gdt_to_kernel();
+    setup_idt();
+    init_protect();
 }
