@@ -3,4 +3,5 @@
 #include "const.h"
 #include "type.h"
 PUBLIC void disp_int(int num);
+PUBLIC void delay(int time);
 #endif

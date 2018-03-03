@@ -2,7 +2,21 @@
 #include "const.h"
 #include "proto.h"
 
-
+/**
+* @desc : delay some time
+*/
+PUBLIC void delay(int time)
+{
+    for(int i = 0; i < time; ++ i)
+    {
+        for(int j = 0; j < 10; ++ j)
+        {
+            for(int k = 0; k < 10000; ++ k)
+            {
+            }
+        }
+    }
+}
 /**
 * @desc : transform a integer to string
 * @param str: begin of buf,assume that buf is enough big

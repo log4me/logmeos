@@ -1,22 +1,31 @@
-SELECTOR_KERNEL_CS  equ  8 ;FLAT_C
-
+%include "sconst.inc"
 ;导入函数
 extern cstart
 extern exception_handler
 extern spurious_irq
+extern kernel_main
+extern disp_str
+extern clock_handler
 
 ;导入全局变量
 extern gdt_ptr
 extern idt_ptr
 extern disp_pos
+extern p_proc_ready
+extern tss
+extern k_reenter
 
 [SECTION .bss]
 StackSpace  resb    1024 * 2
 StackTop:
 
+[SECTION .data]
+clock_int_msg db "^",0
+
 [section .text]	; 代码在此
 
 ;导出符号
+global restart
 global _start	; 导出 _start
 global divide_error
 global single_step_exception
@@ -67,8 +76,12 @@ _start:	; 跳到这里来的时候，我们假设 gs 指向显存
     
     jmp SELECTOR_KERNEL_CS:csinit ;这个跳转指令会清空指令队列，重新加载<<OS:D&I 2nd>> P90
 csinit:    
-    sti
-    hlt
+    xor eax, eax
+    mov ax, SELECTOR_TSS
+    ltr ax
+    jmp kernel_main
+    ;sti
+    ;hlt
 ;hardware interrupt
 ;用宏来生成中断例程程序，首先把中断号压栈，然后雕印spurious_irq
 ;master 8259a
@@ -81,7 +94,60 @@ csinit:
 
 ALIGN 16
 hwint00:            ;Interrupt routine for irq 0(clock)
-    hwint_master 0
+    ;保护现场
+    ;调用中断处理程序时执行到此处时，esp,ss,eflags, cs, eip已经压栈，此时esp指向stack_frame中的retaddr
+    ;CPU在响应中断的过程中自动关闭终端
+    ;1.切换堆栈(从tss中读取对应的ss,和esp) 2.把esp,ss,eflags,cs,eip压栈
+    ;从这里开始用的进程表中的栈
+    sub esp, 4
+    pushad
+    push ds
+    push es
+    push fs
+    push gs
+   
+    mov dx, ss
+    mov ds, dx
+    mov es, dx
+    
+    inc byte [gs:0] 
+
+    mov al, EOI   ;通知8259a终端已处理
+    out INT_M_CTL, al
+    
+    inc dword [k_reenter] 
+    cmp dword [k_reenter], 0
+    jne .re_enter
+
+    ;切换堆栈,切换到内核栈
+    mov esp, StackTop
+    ;从这里开始使用内核栈
+    
+    sti
+    push 0
+    call clock_handler
+    add esp, 4
+    cli
+ 
+    
+    mov esp, [p_proc_ready]  ;离开内核栈
+    ;这里开始继续使用进程表作为栈
+    ;切换进程的ldt
+    lldt [esp + P_LDT_SEL]    
+    lea eax, [esp + P_STACKTOP]
+    mov dword [tss + TSS3_S_SP0], eax    
+ 
+.re_enter: ;如果为重入中断(k_reenter != 0)，会跳转到这里
+    ;恢复现场
+    dec dword[k_reenter]
+    pop gs
+    pop fs
+    pop es
+    pop ds
+    popad
+    add esp, 4
+    ;iretd指令依次弹出EIP, CS(抛弃高16位),EFLAGS  
+    iretd
 ALIGN 16
 hwint01:            ;Interrupt routine for irq 1(keyboard)
     hwint_master 1
@@ -217,3 +283,22 @@ exception:
     add esp, 4 * 2 ; Eip is at the stack top;TOP => EIP => CS => eflags   
     hlt
 
+;restart
+restart:
+    mov esp, [p_proc_ready]
+    ;lea esp, [p_proc_ready]
+    lldt [esp + P_LDT_SEL]
+    ;初始化TSS中的esp0,低特权级->高特权级需要ss0,esp0
+    lea eax, [esp + P_STACKTOP]
+    mov [tss + TSS3_S_SP0], eax
+    ;jmp $
+    pop gs
+    ;jmp $
+    pop fs
+    pop es
+    pop ds
+    popad
+
+    add esp, 4
+    ;iretd指令依次弹出EIP, CS(抛弃高16位),EFLAGS  
+    iretd

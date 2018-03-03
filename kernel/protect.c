@@ -4,6 +4,8 @@
 #include "global.h"
 #include "proto.h"
 #include "klib.h"
+#include "string.h"
+#include "proc.h"
 PRIVATE void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege);
 PUBLIC void exception_handler(int vec_no, int err_code, int eip, int cs, int eflags)
 {
@@ -50,6 +52,20 @@ PUBLIC void exception_handler(int vec_no, int err_code, int eip, int cs, int efl
         disp_color_str("Error code:", text_color);
         disp_int(err_code);
     }
+}
+PRIVATE void init_descriptor(DESCRIPTOR *p_desc, u32 base, u32 limit, u16 attribute)
+{
+    p_desc->limit_low = limit & 0xFFFF;
+    p_desc->base_low = base & 0xFFFF;
+    p_desc->base_mid = (base >> 16) & 0xFFFF;
+    p_desc->attr1 = attribute & 0xFF;
+    p_desc->limit_high_attr2 = ((limit >> 16) & 0x0F) | (attribute >> 8) & 0xF0;
+    p_desc->base_high = (base >> 24) & 0xFF;
+}
+PUBLIC u32 seg2phys(u16 seg)
+{
+    DESCRIPTOR *p_desc = &gdt[seg >> 3];
+    return (p_desc->base_high << 24 | p_desc->base_mid << 16 | p_desc->base_low);
 }
 //Int functions
 //in kernel.asm
@@ -127,6 +143,28 @@ PUBLIC void init_protect()
     init_idt_desc(INT_VECTOR_IRQ8 + 5, DA_386IGate, hwint13, PRIVILEGE_KRNL);
     init_idt_desc(INT_VECTOR_IRQ8 + 6, DA_386IGate, hwint14, PRIVILEGE_KRNL);
     init_idt_desc(INT_VECTOR_IRQ8 + 7, DA_386IGate, hwint15, PRIVILEGE_KRNL);
+    
+    //填充GDT中的TSS
+    memset(&tss, 0, sizeof(tss));
+    tss.ss0 = SELECTOR_KERNEL_DS; 
+    init_descriptor(&gdt[INDEX_TSS], 
+        log2linear(seg2phys(SELECTOR_KERNEL_DS), &tss),
+        sizeof(tss) - 1,
+         DA_386TSS);
+    
+    tss.iobase = sizeof(tss);//IO位图基址大于或等于TSS段界限，表示没有I/0许可位图
+    /*填充GDT中进程的LDT描述符*/
+    PCB *p_proc = proc_table;
+    u16 selector_ldt = INDEX_LDT_FIRST << 3;
+    for(int i = 0; i < NR_TASKS; ++ i)
+    {
+        init_descriptor(&gdt[selector_ldt >> 3],
+            log2linear(seg2phys(SELECTOR_KERNEL_DS), proc_table[i].ldts),
+            LDT_SIZE * sizeof(DESCRIPTOR) - 1,
+            DA_LDT);
+        p_proc ++;
+        selector_ldt += 1 << 3;
+    }
 }
 /*
 * 初始化386中断门

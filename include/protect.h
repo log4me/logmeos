@@ -17,26 +17,73 @@ typedef struct s_gate
 {
     u16 offset_low; //Offset Low
     u16 selector; //Selector
-    u8 dcount;//param copy count of call gate
+    u8 dcount;//param copy count of call gate,only used in call gate
     u8 attr; //P(1) DPL(2) DT(1) TYPE(4)
     u16 offset_high; //Offset High
 } GATE;
+typedef struct s_tss
+{
+    u32 backlink;
+    u32 esp0;   /* stack pointer to use during interrupt */
+    u32 ss0;    /*   "   segment  "  "    "        "     */
+    u32 esp1;
+    u32 ss1;
+    u32 esp2;
+    u32 ss2;
+    u32 cr3;
+    u32 eip;
+    u32 flags;
+    u32 eax;
+    u32 ecx;
+    u32 edx;
+    u32 ebx;
+    u32 esp;
+    u32 ebp;
+    u32 esi;
+    u32 edi;
+    u32 es; 
+    u32 cs; 
+    u32 ss; 
+    u32 ds; 
+    u32 fs; 
+    u32 gs; 
+    u32 ldt;
+    u16 trap;
+    u16 iobase; /* I/O位图基址大于或等于TSS段界限，就表示没有I/O>许可位图 */
+}TSS;
+
 /* GDT */
 /* 描述符索引 */
 #define INDEX_DUMMY     0   // ┓
 #define INDEX_FLAT_C        1   // ┣ LOADER 里面已经确定了的.
 #define INDEX_FLAT_RW       2   // ┃
 #define INDEX_VIDEO     3   // ┛
+#define INDEX_TSS    4
+#define INDEX_LDT_FIRST 5
 /* 选择子 */
 #define SELECTOR_DUMMY         0        // ┓
 #define SELECTOR_FLAT_C     0x08        // ┣ LOADER 里面已经确定了的.
 #define SELECTOR_FLAT_RW    0x10        // ┃
-#define SELECTOR_VIDEO      (0x18+3)    // ┛<-- RPL=3
+#define SELECTOR_VIDEO      (0x18 + 3)    // ┛<-- RPL=3
+#define SELECTOR_TSS 0x20  //TSS
+#define SELECTOR_LDT_FIRST 0X28
 
 #define SELECTOR_KERNEL_CS  SELECTOR_FLAT_C
 #define SELECTOR_KERNEL_DS  SELECTOR_FLAT_RW
+#define SELECTOR_KERNEL_GS SELECTOR_VIDEO
 
 
+/*选择子类型说明*/
+//Selector Attribute
+#define SA_RPL_MASK 0xFFFC
+#define SA_RPL0 0
+#define SA_RPL1 1
+#define SA_RPL2 2
+#define SA_RPL3 3
+
+#define SA_TI_MASK 0xFFFB
+#define SA_TIG 0
+#define SA_TIL 4
 /* 描述符类型值说明 */
 #define DA_32           0x4000  /* 32 位段              */
 #define DA_LIMIT_4K     0x8000  /* 段界限粒度为 4K 字节         */
@@ -82,5 +129,9 @@ typedef struct s_gate
 //8259a irq
 #define INT_VECTOR_IRQ0 0x20
 #define INT_VECTOR_IRQ8 0x28
+
+//?
+//逻辑地址 -> 线性地址
+#define log2linear(seg_base, vir) (u32)(((u32)seg_base) + (u32)(vir))
 
 #endif

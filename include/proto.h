@@ -9,5 +9,11 @@ PUBLIC void disp_str(char *info);
 PUBLIC void disp_color_str(char *info, int color);
 PUBLIC void init_protect();
 PUBLIC void init_8259A();
+//kernel.asm
+PUBLIC void restart();
 //PUBLIC void spurious_irq(int irq);
+//Tasks
+void TestA();
+void TestB();
+void TestC();
 #endif

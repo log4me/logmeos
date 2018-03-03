@@ -7,6 +7,8 @@
 //count of gdt and idt descriptor
 #define GDT_SIZE 128
 #define IDT_SIZE 256
+/*每一个LDT中的描述符个数*/
+#define LDT_SIZE 2
 
 /* privilege */
 #define PRIVILEGE_KRNL 0
@@ -19,5 +21,9 @@
 #define INT_S_CTL 0xA0 // I/O port for interrupt controller of Slave 8259A
 
 #define INT_S_CTLMASK 0xA1 // setting bits for Slave
+/* RPL */
+#define RPL_KRNL SA_RPL0
+#define RPL_TASK SA_RPL1
+#define RPL_USER SA_RPL3
 
 #endif
