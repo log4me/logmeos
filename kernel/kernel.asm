@@ -15,6 +15,7 @@ extern p_proc_ready
 extern tss
 extern k_reenter
 extern irq_table
+extern sys_call_table
 
 [SECTION .bss]
 StackSpace  resb    1024 * 2
@@ -27,6 +28,7 @@ clock_int_msg db "^",0
 
 ;导出符号
 global restart
+global sys_call
 global _start	; 导出 _start
 global divide_error
 global single_step_exception
@@ -168,6 +170,14 @@ hwint14:            ;Interrupt routine for irq 15
 ALIGN 16
 hwint15:            ;Interrupt routine for irq 0(clock)
     hwint_slave 15
+;sys_call系统调用,在eax中保存系统调用号，然后调用sys_call_table中对应的函数
+sys_call:
+    call save
+    sti
+    call [sys_call_table + eax * 4]
+    mov [esi + EAXREG - P_STACKBASE], eax
+    cli
+    ret
 
 ;interrupt and exception
 divide_error:
@@ -263,7 +273,7 @@ save:
     mov ds, dx
     mov es, dx
     
-    mov eax, esp        ;eax为当前进程PCB首地址
+    mov esi, esp        ;esi为当前进程PCB首地址
     
     inc dword [k_reenter]
     cmp dword [k_reenter], 0
@@ -271,10 +281,10 @@ save:
     mov esp, StackTop ;切换到内核栈 
 
     push restart
-    jmp [eax + RETADR - P_STACKBASE];跳转到retadr执行
+    jmp [esi + RETADR - P_STACKBASE];跳转到retadr执行
 .1: ;重入中断
     push restart_reenter
-    jmp [eax + RETADR - P_STACKBASE] 
+    jmp [esi + RETADR - P_STACKBASE] 
 
 ;restart
 restart:

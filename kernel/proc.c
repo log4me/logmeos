@@ -1,11 +1,20 @@
+//proc.c
+#include "type.h"
+#include "const.h"
 #include "proto.h"
+#include "global.h"
 #include "klib.h"
+
+//系统调用sys_get_ticks
+PUBLIC int sys_get_ticks()
+{
+    return ticks;
+}
 void TestA()
 {
-    int i = 0;
     while(1){
         disp_str("A");
-        //disp_int(i++);
+        disp_int(get_ticks());
         //disp_str(".");
         delay(10);
     }   

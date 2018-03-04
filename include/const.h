@@ -40,5 +40,14 @@
 #define PRINTER_IRQ 7
 #define AT_WINI_IRQ 14  /* at winchester */
 
+//系统调用
+#define NR_SYS_CALL 1
+
+//8254定时计数器
+#define TIMER0 0x40 //8254 计数器0的I/0端口
+#define TIMER_MODE 0x43 //8254模式控制寄存器
+#define RATE_GENERATOR 0x34 //计数器0采用方波发生器
+#define TIMER_FREQ 1193182L //PC&AT的时钟频率
+#define HZ 100 //终端频率每s100次即10ms一次
 
 #endif

@@ -24,4 +24,10 @@ PUBLIC void spurious_irq(int irq);
 PUBLIC void init_8259A();
 //clock.c
 PUBLIC void clock_handler(int irq);
+PUBLIC void init_8254();
+//syscall.asm
+PUBLIC void sys_call();
+PUBLIC int get_ticks();
+//proc.c
+PUBLIC int sys_get_ticks();
 #endif

@@ -7,15 +7,8 @@
 */
 PUBLIC void delay(int time)
 {
-    for(int i = 0; i < time; ++ i)
-    {
-        for(int j = 0; j < 10; ++ j)
-        {
-            for(int k = 0; k < 10000; ++ k)
-            {
-            }
-        }
-    }
+    int t = get_ticks();
+    while(((get_ticks() - t) * 1000 / HZ) < time);
 }
 /**
 * @desc : transform a integer to string
