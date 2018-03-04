@@ -24,7 +24,9 @@ typedef struct s_stackframe
     u32 eflags;
     u32 esp;
     u32 ss;
+    //当发生中断从ring3(ring1) -> ring0切换时，首先从tss中读取esp0,ss0,然后esp指向该结构的末端(高地址)，然后依次压入ss,esp,elfags,cs,eip，手动压入retaddr,eax,ecx,edx,ebx,kernel_esp，ebp,esi,edi,ds,es,fs,gs)
 } STACK_FRAME;
+
 //Process control Block
 typedef struct s_proc
 {
