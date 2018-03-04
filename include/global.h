@@ -17,4 +17,5 @@ extern char task_stack[];
 extern TSS tss;
 extern u32 k_reenter;//中断重入次数
 extern TASK task_table[];
+extern irq_handler irq_table[];
 #endif

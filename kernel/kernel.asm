@@ -14,6 +14,7 @@ extern disp_pos
 extern p_proc_ready
 extern tss
 extern k_reenter
+extern irq_table
 
 [SECTION .bss]
 StackSpace  resb    1024 * 2
@@ -86,74 +87,39 @@ csinit:
 ;用宏来生成中断例程程序，首先把中断号压栈，然后雕印spurious_irq
 ;master 8259a
 %macro hwint_master 1
-    push %1
-    call spurious_irq
-    add esp, 4
-    hlt
-%endmacro
-
-ALIGN 16
-hwint00:            ;Interrupt routine for irq 0(clock)
-    ;保护现场
     ;调用中断处理程序时执行到此处时，esp,ss,eflags, cs, eip已经压栈，此时esp指向stack_frame中的retaddr
     ;CPU在响应中断的过程中自动关闭终端
     ;1.切换堆栈(从tss中读取对应的ss,和esp) 2.把esp,ss,eflags,cs,eip压栈
     ;从这里开始用的进程表中的栈
-    sub esp, 4
-    pushad
-    push ds
-    push es
-    push fs
-    push gs
-   
-    mov dx, ss
-    mov ds, dx
-    mov es, dx
-    
-    inc byte [gs:0] 
-
-    mov al, EOI   ;通知8259a终端已处理
+    call save;保存寄存器,函数调用会把下一句的eip压入到堆栈中(retaddr)
+    in al, INT_M_CTLMASK
+    or al, (1 << %1)     ;屏蔽当前中断
+    out INT_M_CTLMASK, al
+    mov al, EOI          ;通知8259a当前中断已处理
     out INT_M_CTL, al
-    
-    inc dword [k_reenter] 
-    cmp dword [k_reenter], 0
-    jne .re_enter
-
-    ;切换堆栈,切换到内核栈
-    mov esp, StackTop
-    ;从这里开始使用内核栈
-    
     sti
-    push 0
-    call clock_handler
-    add esp, 4
-    cli
- 
+    push %1
+    call [irq_table + 4 * %1]   ;调用中断处理程序
+    pop ecx
+    cli            ;关中断
     
-    mov esp, [p_proc_ready]  ;离开内核栈
-    ;这里开始继续使用进程表作为栈
-    ;切换进程的ldt
-    lldt [esp + P_LDT_SEL]    
-    lea eax, [esp + P_STACKTOP]
-    mov dword [tss + TSS3_S_SP0], eax    
- 
-.re_enter: ;如果为重入中断(k_reenter != 0)，会跳转到这里
-    ;恢复现场
-    dec dword[k_reenter]
-    pop gs
-    pop fs
-    pop es
-    pop ds
-    popad
-    add esp, 4
-    ;iretd指令依次弹出EIP, CS(抛弃高16位),EFLAGS  
-    iretd
+    ;打开当前中断
+    in al, INT_M_CTLMASK
+    and al, ~(1 << %1) 
+    out INT_M_CTLMASK, al
+
+    ret ;ret后会回到restart或者restart_reenter执行
+%endmacro
+
+ALIGN 16
+hwint00:            ;Interrupt routine for irq 0(clock)
+    hwint_master 0
 ALIGN 16
 hwint01:            ;Interrupt routine for irq 1(keyboard)
     hwint_master 1
 ALIGN 16
 hwint02:            ;Interrupt routine for irq 2(Slave 8259a)
-    hwint_master 2
+    hwint_master 0
 
 ALIGN 16
 hwint03:            ;Interrupt routine for irq 3(second serial)
@@ -283,17 +249,43 @@ exception:
     add esp, 4 * 2 ; Eip is at the stack top;TOP => EIP => CS => eflags   
     hlt
 
+save:
+;save函数，保存寄存器，根据是否为重入中断，切换堆栈并调用函数
+    ;保存寄存器
+    ;此时esp指向进程的PCB中的eax
+    pushad
+    push ds
+    push es
+    push fs
+    push gs
+    ;初始化段寄存器 
+    mov dx, ss
+    mov ds, dx
+    mov es, dx
+    
+    mov eax, esp        ;eax为当前进程PCB首地址
+    
+    inc dword [k_reenter]
+    cmp dword [k_reenter], 0
+    jne .1      ;非重入中断
+    mov esp, StackTop ;切换到内核栈 
+
+    push restart
+    jmp [eax + RETADR - P_STACKBASE];跳转到retadr执行
+.1: ;重入中断
+    push restart_reenter
+    jmp [eax + RETADR - P_STACKBASE] 
+
 ;restart
 restart:
     mov esp, [p_proc_ready]
-    ;lea esp, [p_proc_ready]
     lldt [esp + P_LDT_SEL]
     ;初始化TSS中的esp0,低特权级->高特权级需要ss0,esp0
     lea eax, [esp + P_STACKTOP]
     mov [tss + TSS3_S_SP0], eax
-    ;jmp $
+restart_reenter:
+    dec dword [k_reenter]
     pop gs
-    ;jmp $
     pop fs
     pop es
     pop ds

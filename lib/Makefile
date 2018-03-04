@@ -6,7 +6,7 @@ TARGETS = kernel.o start.o
 ASM = nasm
 CC = gcc
 LD = ld
-ASMFLAGS = -f elf32
+ASMFLAGS = -I ../include/ -f elf32
 CFLAGS = -I ../include -m32 -c -fno-builtin -fno-stack-protector
 
 .PHONY : clean all

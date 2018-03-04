@@ -3,12 +3,14 @@
 //proto of function
 #include "const.h"
 #include "type.h"
+#include "global.h"
+//klib.asm
 PUBLIC void out_byte(u16 port, u8 value);
 PUBLIC u8 in_byte(u16 port);
 PUBLIC void disp_str(char *info);
 PUBLIC void disp_color_str(char *info, int color);
+//protect.c
 PUBLIC void init_protect();
-PUBLIC void init_8259A();
 //kernel.asm
 PUBLIC void restart();
 //PUBLIC void spurious_irq(int irq);
@@ -16,4 +18,10 @@ PUBLIC void restart();
 void TestA();
 void TestB();
 void TestC();
+//init8259a.c
+PUBLIC void put_irq_handler(int irq, irq_handler handler);
+PUBLIC void spurious_irq(int irq);
+PUBLIC void init_8259A();
+//clock.c
+PUBLIC void clock_handler(int irq);
 #endif
