@@ -5,13 +5,13 @@
 //时钟中断处理函数
 PUBLIC void clock_handler(int irq)
 {
-    disp_str("#");
     ++ ticks;
-    p_proc_ready++; 
+    p_proc_ready->ticks --;
     if (p_proc_ready >= proc_table + NR_TASKS)
     {
         p_proc_ready = proc_table;
     }
+    schedule();
 }
 //初始化8254每10ms发生一次时钟中断
 PUBLIC void init_8254()

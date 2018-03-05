@@ -8,7 +8,14 @@
 #include "string.h"
 PUBLIC int kernel_main()
 {
-    disp_str("---\n\n\n\n\n\n\n\n\n\"kernel_main\" begins---\n");
+    //清屏
+    disp_pos = 0;
+    for(int i = 0; i < 80 * 25; ++ i)
+    {
+        disp_str(" ");
+    }
+    disp_pos = 0;
+    disp_str("welcome to logme os.\n");
     PCB *p_proc = proc_table;
     TASK* p_task = task_table;
     char *p_task_stack = task_stack + STACK_SIZE_TOTAL;
@@ -19,6 +26,12 @@ PUBLIC int kernel_main()
         p_proc->pid = i;                        //进程pid
         //初始化进程ldt
         p_proc->ldt_sel = selector_ldt;
+        if(p_task->priority <= 0)
+        {
+            //如果任务优先级 <= 0，则赋予默认优先级
+            p_task->priority = DEFAULT_PRIORITY;
+        }
+        p_proc->ticks = p_proc->priority = p_task->priority;
 
         memcpy(&p_proc->ldts[0], &gdt[SELECTOR_KERNEL_CS >> 3], sizeof(DESCRIPTOR));
 

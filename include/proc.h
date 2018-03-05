@@ -35,12 +35,15 @@ typedef struct s_proc
     DESCRIPTOR ldts[LDT_SIZE];//ldt used by the process
     u32 pid;//process id
     char p_name[16];//process name
+    int ticks; //剩余时钟周期数，用于进程调度
+    int priority;
 } PCB;
 typedef struct s_task
 {
     task_f initial_eip;
     int stacksize;
     char name[16];
+    int priority;
 } TASK;
 //number of process
 #define NR_TASKS 3

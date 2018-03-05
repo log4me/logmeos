@@ -50,4 +50,18 @@
 #define TIMER_FREQ 1193182L //PC&AT的时钟频率
 #define HZ 100 //终端频率每s100次即10ms一次
 
+//进程调度
+//进程默认优先级
+#define DEFAULT_PRIORITY 20
+
+//文本模式下颜色定义
+#define BLACK 0x0
+#define WHITE 0x7
+#define RED 0x4
+#define GREEN 0x2
+#define BLUE 0x1
+#define FLASH 0x80
+#define BRIGHT 0x08
+#define MAKE_COLOR(back, fore) (back | fore)
+
 #endif

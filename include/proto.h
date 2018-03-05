@@ -30,4 +30,5 @@ PUBLIC void sys_call();
 PUBLIC int get_ticks();
 //proc.c
 PUBLIC int sys_get_ticks();
+PUBLIC void schedule();
 #endif
